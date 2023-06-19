@@ -50,8 +50,8 @@ Tf = simulationPars.times.tf;         % stop time of the simulation
 % ----------------------------
 %% Start Simulation
 % % ----------------------------
-vehicle_data.rear_suspension.Ks_r = 10000;
-vehicle_data.front_suspension.Ks_f = 25000;
+% vehicle_data.rear_suspension.Ks_r = 25000;
+% vehicle_data.front_suspension.Ks_f = 10000;
 % % 
 % vehicle_data.vehicle.L_f = 1.2;
 % vehicle_data.vehicle.L_r = 0.5;
@@ -69,26 +69,25 @@ fprintf('The total simulation time was %.2f seconds\n',elapsed_time_simulation)
 dataAnalysis(model_sim,vehicle_data,Ts);
 
 %% Steady-State analysis - Handling Behaviour
-
+close all
 ssAnalysis(model_sim,vehicle_data,Ts);
 
 %% Further analysis on the behaviour of the vehicle - Different simulations with different values of some parameters 
-% Ks_r_vec = [10000 15000 vehicle_data.rear_suspension.Ks_r];
-% Ks_f_vec = [25000 20000 vehicle_data.front_suspension.Ks_f];
-% %gamma_vec = [-2 2];
+% Ks_r_vec = [5000 12000 vehicle_data.rear_suspension.Ks_r];
+% Ks_f_vec = [12000 vehicle_data.front_suspension.Ks_f 20000];
+% gamma_vec = [-2 2];
 % 
 % for i=1:3
 %     fprintf('Starting Simulation %d\n',i)
 %     tic;
 %     vehicle_data.rear_suspension.Ks_r = Ks_r_vec(i);
-%     vehicle_data.front_suspension.Ks_f = Ks_f_vec(i);
 %     model_sim = sim('Vehicle_Model_2Track');
 %     sim_vec(i) = model_sim;
 %     elapsed_time_simulation = toc;
 %     fprintf('Simulation %d completed\n', i)
 %     fprintf('The total simulation time was %.2f seconds\n',elapsed_time_simulation)
 % end
-%%
+
 % suspAnalysis(sim_vec,vehicle_data,Ts);
 
-% %vehicleAnimation(model_sim,vehicle_data,Ts);
+%vehicleAnimation(model_sim,vehicle_data,Ts);

@@ -33,14 +33,14 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     % ---------------------------------
     time_sim = sim_vec(1).states.u.time;
 
-    t_steer = sim_vec(1).inputs.t_steer.data;
-
     time_sim_transient = time_sim(time_sim < t_steer);
     index_ss = length(time_sim_transient);
     time_sim_ss        = time_sim(index_ss:end);
 
 
     for i = 1:length(sim_vec)    
+        delta_D{i}   = sim_vec(i).inputs.delta_D.data;
+        delta_D_ss{i}= delta_D{i}{index_ss:end};
 
         u{i}          = sim_vec(i).states.u.data;
         v{i}          = sim_vec(i).states.v.data;
@@ -49,16 +49,14 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
         Fz_rl{i}      = sim_vec(i).states.Fz_rl.data;
         Fz_fr{i}      = sim_vec(i).states.Fz_fr.data;
         Fz_fl{i}      = sim_vec(i).states.Fz_fl.data;
-        delta{i}      = sim_vec(i).states.delta.data;
         
-        u_ss{i}          = u{i}(index_ss:end);
-        v_ss{i}          = v{i}(index_ss:end);
-        Omega_ss{i}      = Omega{i}(index_ss:end);
-        Fz_rr_ss{i}      = Fz_rr{i}(index_ss:end);
-        Fz_rl_ss{i}      = Fz_rl{i}(index_ss:end);
-        Fz_fr_ss{i}      = Fz_fr{i}(index_ss:end);
-        Fz_fl_ss{i}      = Fz_fl{i}(index_ss:end);
-        delta_ss{i}      = delta{i}(index_ss:end);
+        u_ss{i}          = u{i}{index_ss:end};
+        v_ss{i}          = v{i}{index_ss:end};
+        Omega_ss{i}      = Omega{i}{index_ss:end};
+        Fz_rr_ss{i}      = Fz_rr{i}{index_ss:end};
+        Fz_rl_ss{i}      = Fz_rl{i}{index_ss:end};
+        Fz_fr_ss{i}      = Fz_fr{i}{index_ss:end};
+        Fz_fl_ss{i}      = Fz_fl{i}{index_ss:end};
 
         % -----------------
         % Extra Parameters
@@ -72,14 +70,14 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
         delta_fr{i}   = sim_vec(i).extra_params.delta_fr.data;
         delta_fl{i}   = sim_vec(i).extra_params.delta_fl.data;
 
-        Fx_fr_ss{i}       = Fx_fr{i}(index_ss:end);
-        Fx_fl_ss{i}       = Fx_fl{i}(index_ss:end);
-        Fy_rr_ss{i}       = Fy_rr{i}(index_ss:end);
-        Fy_rl_ss{i}       = Fy_rl{i}(index_ss:end);
-        Fy_fr_ss{i}       = Fy_fr{i}(index_ss:end);
-        Fy_fl_ss{i}       = Fy_fl{i}(index_ss:end);
-        delta_fr_ss{i}    = delta_fr{i}(index_ss:end);
-        delta_fl_ss{i}    = delta_fl{i}(index_ss:end);
+        Fx_fr_ss{i}       = Fx_fr{i}{index_ss:end};
+        Fx_fl_ss{i}       = Fx_fl{i}{index_ss:end};
+        Fy_rr_ss{i}       = Fy_rr{i}{index_ss:end};
+        Fy_rl_ss{i}       = Fy_rl{i}{index_ss:end};
+        Fy_fr_ss{i}       = Fy_fr{i}{index_ss:end};
+        Fy_fl_ss{i}       = Fy_fl{i}{index_ss:end};
+        delta_fr_ss{i}    = delta_fr{i}{index_ss:end};
+        delta_fl_ss{i}    = delta_fl{i}{index_ss:end};
     
         % Chassis side slip angle beta [rad]
         beta_ss{i} = atan(v_ss{i}./u_ss{i});
@@ -97,6 +95,8 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
         % Steady state and transient curvature [m]
         rho_ss{i}   = Omega_ss{i}./u_ss{i};
 
+        % Steering angle at the wheel
+        delta_f{i} = delta_D_ss{i}/tau_D;
     
         % Normalized lateral acceleration
         norm_acc{i} = Ay_ss{i}./g;
@@ -107,14 +107,12 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
         Fz_f{i} = Fz_fr_ss{i} + Fz_fl_ss{i};
         
         % --- AXLE CHARACTERISTICS ---
-        Fy_R_ss{i} = Fy_rl_ss{i} + Fy_rr_ss{i};
-        Fy_F_ss{i} = sin(delta_fl_ss{i}).*Fx_fl_ss{i} + Fy_fl_ss{i} + sin(delta_fr_ss{i}).*Fx_fr_ss{i} + Fy_fr_ss{i};
+        Fy_R{i} = Fy_rl_ss{i} + Fy_rr_ss{i};
+        Fy_F{i} = sin(delta_fl_ss{i}).*Fx_fl_ss{i} + Fy_fl_ss{i} + sin(delta_fr_ss{i}).*Fx_fr_ss{i} + Fy_fr_ss{i};
     
         % ---- axle side slips ----
         alpha_r_ss{i} = - (v_ss{i} - Omega_ss{i}*Lr)./u_ss{i};
-        alpha_f_ss{i} =  delta_ss{i} - (v_ss{i} + Omega_ss{i}*Lf)./u_ss{i};
-        alpha_r_ss{i}(1,1) = 0;
-        alpha_f_ss{i}(1,1) = 0;
+        alpha_f_ss{i} =  deg2rad(delta_f_ss{i}) - (v_ss{i} + Omega_ss{i}*Lf)./u_ss{i};
     
         % ---- normalized axle lateral forces ----
         Fzr0 = m*9.81*Lf/L;
@@ -150,8 +148,8 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     xlabel('$a_y$')
     grid on
     ylim([0 1000])
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('Rear LLT ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
+    legend('$\eps_s1$','$\eps_s1$','$\eps_s1$')
+    title('Rear LLT ($\eps_s1 > \eps_s2 > \eps_s3$)')
 
     % --- FRONT --- %
     ax(2) = subplot(212);
@@ -164,8 +162,8 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     xlabel('$a_y$')
     grid on
     ylim([0 1000])
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('Front LLT ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
+    legend('$\eps_s1$','$\eps_s1$','$\eps_s1$')
+    title('Front LLT ($\eps_s1 > \eps_s2 > \eps_s3$)')
 
 
     %% Plot Axle characteristics
@@ -175,28 +173,28 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     figure('Name','Fy_R normalized','NumberTitle','off'), clf
     hold on
     for i = 1:length(sim_vec)
-        plot(alpha_r_ss{i}, Fy_r_ss{i},'LineWidth',2)
+        plot(alpha_r_ss{i}, Fy_r_ss{i},'LineWidth',2,'Color',color_rear)
         hold on
     end
     grid on
     xlabel('$\alpha_R [rad]$')
     ylabel('$\mu_R$')
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('$\mu_R$ with ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
+    legend('$\eps_s1$','$\eps_s1$','$\eps_s1$')
+    title('$\mu_R$ ($\eps_s1 > \eps_s2 > \eps_s3$)')
     xlim([0 0.15]);
     ylim([0 1.7]);
 
     figure('Name','Fy_F normalized','NumberTitle','off'), clf
     hold on
     for i = 1:length(sim_vec)
-        plot(alpha_f_ss{i}, Fy_f_ss{i},'LineWidth',2)
+        plot(alpha_f_ss{i}, Fy_f_ss{i},'LineWidth',2,'Color',color_front)
         hold on
     end
     grid on
     xlabel('$\alpha_F [rad]$')
     ylabel('$\mu_F$')
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('$\mu_F$ with ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
+    legend('$\eps_s1$','$\eps_s1$','$\eps_s1$')
+    title('$\mu_F$ ($\eps_s1 > \eps_s2 > \eps_s3$)')
     xlim([0 0.15]);
     ylim([0 1.7]);
 
@@ -204,23 +202,30 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     %% Plot behaviour of vehicle - Handling diagram for steer ramp test with constant velocity
    
     for i = 1:length(sim_vec)
-        hand_curve_ss{i} =  delta_ss{i} - rho_ss{i}.*L;
-
+        % bug sul primo elemento di alpha
+        alpha_r(1,i) = 0;
+        alpha_f(1,i) = 0;
+        
+        hand_curve_ss{i} = - (alpha_r_ss{i} - alpha_f_ss{i}); 
+        hand_curve(1,i) = 0;
     end
    
+    
     figure('Name','Handling curve','NumberTitle','off'), clf
     set(gca,'fontsize',16)
     hold on
+    axis equal
     xlabel('$ \frac{a_y}{g}$')
-    ylabel('$\delta - \rho L$')
-    title('Handling Diagram (with $\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)','FontSize',18)
+    ylabel('$\delta\tau - \rho L$')
+    title('Handling Diagram (with $Ks_r1 \less Ks_r2 \less Ks_r3$)','FontSize',18)
     for i = 1:length(sim_vec)   
-        plot(norm_acc{i},hand_curve_ss{i},'LineWidth',2)
+        plot(norm_acc_ss{i},hand_curve_ss{i},'LineWidth',2)
+        hold on
     end
-    xlim([0 1.7])
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    hold off
-    
+    xlim([0 2])
+    legend('$Ks_r1$','$Ks_r2$','$Ks_r3$')
+
+
 
 end
     

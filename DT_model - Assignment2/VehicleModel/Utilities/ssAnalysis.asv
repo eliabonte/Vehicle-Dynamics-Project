@@ -94,9 +94,6 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     delta_fr_ss   = delta_fr(index_ss:end);
     delta_fl_ss   = delta_fl(index_ss:end);
 
-    delta_fr_ss   = deg2rad(delta_fr_ss);
-    delta_fl_ss   = deg2rad(delta_fl_ss);
-
     % Chassis side slip angle beta [rad]
     beta_tot = atan(v./u);
     beta_ss = atan(v_ss./u_ss);
@@ -130,14 +127,18 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     
     % --- AXLE CHARACTERISTICS ---
     Fy_R = Fy_rl_ss + Fy_rr_ss;
-    Fy_F = sin(delta_fl_ss).*Fx_fl_ss + cos(delta_fl_ss).*Fy_fl_ss + sin(delta_fr_ss).*Fx_fr_ss + cos(delta_fr_ss).*Fy_fr_ss;
+    Fy_F = sin(delta_fl_ss).*Fx_fl_ss + Fy_fl_ss + sin(delta_fr_ss).*Fx_fr_ss + Fy_fr_ss;
+
 
     % ---- axle side slips ----
     alpha_r = - (v_ss - Omega_ss*Lr)./u_ss;
     alpha_f =  delta_ss - (v_ss + Omega_ss*Lf)./u_ss;
+    % bug sul primo elemento di alpha
     alpha_r(1) = 0;
-    alpha_f(1) =  0;
+    alpha_f(1) = 0;
 
+    % alpha_r = rad2deg(alpha_r);
+    % alpha_f = rad2deg(alpha_f);
 
     % ---- normalized axle lateral forces ----
     Fzr0 = m*9.81*Lf/L;
@@ -250,20 +251,33 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
 
     lin_Fyr = alpha_r.*Cyr;
     lin_Fyf = alpha_f.*Cyf;
+
     lin_range = round(length(alpha_r)/2);
+
+    theta_r = Cyr;
+    th_r = 0:1/360:theta_r;  r_r = 0.1;
+    xx_r = r_r*cos(th_r); yy_r = r_r*sin(th_r);
+
+    theta_f = Cyf;
+    th_f = 0:1/360:theta_f;  r_f = 0.005;
+    xx_f = r_f*cos(th_f); yy_f = r_f*sin(th_f);
 
     figure('Name','muR,muF vs alphaR,alphaF','NumberTitle','off'), clf
     hold on
     plot(alpha_r, mu_r,'LineWidth',2,'Color',"#EDB120")
     plot(alpha_f, mu_f,'LineWidth',2,'Color',"#0072BD")
-    % plot(alpha_r(1:lin_range), lin_Fyr(1:lin_range),'LineWidth',2,'Color',"#EDB120")
-    % plot(alpha_f(1:lin_range), lin_Fyf(1:lin_range),'LineWidth',2,'Color',"#0072BD")
+    plot(alpha_r(1:lin_range), lin_Fyr(1:lin_range),'LineWidth',2,'Color',"#EDB120")
+    plot(alpha_f(1:lin_range), lin_Fyf(1:lin_range),'LineWidth',2,'Color',"#0072BD")
     %plot(alpha_r, ones(size(alpha_r)),'LineWidth',1,'Color','red')
     %hold on
-    text(alpha_r(end)+0.003, mu_r(end)+0.003, 'R','Color',color_rear,'FontSize',15)  %letter R
-    text(alpha_f(end)+0.003, mu_f(end)+0.003, 'F','Color',color_front,'FontSize',15)  %letter R
+    text(alpha_r(end)+0.003, mu_r(end)+0.003, 'R','Color',"#EDB120",'FontSize',15)  %letter R
+    text(alpha_f(end)+0.003, mu_f(end)+0.003, 'F','Color',"#0072BD",'FontSize',15)  %letter R
     %text(alpha_r(end)+0.03, 1, '$\frac{a_y}{g}$','Color',"red")
     %hold on
+    plot(xx_r,yy_r,'LineWidth',1,'Color',"#EDB120")
+    text(r_r*cos(theta_r)+0.003,r_r*sin(theta_r)/2,'$C_yr$','Color',"#EDB120",'FontSize',15)
+    plot(xx_f,yy_f,'LineWidth',1,'Color',"#0072BD")
+    text((r_f*cos(theta_f))+0.003,r_f*sin(theta_f)/2,'$C_yf$','Color',"#0072BD",'FontSize',15)
     grid on
     title('Normalized Lateral Forces vs Axle Side-Slip')
     xlabel('$\alpha_R$, $\alpha_F$ [rad]')
@@ -278,7 +292,7 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     
     
     
-    hand_curve_a = - (alpha_r - alpha_f); 
+    %hand_curve_alpha = - (deg2rad(alpha_r) - deg2rad(alpha_f)); 
     hand_curve =  delta_ss - rho_ss.*L;
 
     hand_curve(1) = 0;
@@ -320,13 +334,12 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     ylabel('$\delta - \rho L$ [rad]')
     title('Handling Diagram','FontSize',18)
     plot(norm_acc,hand_curve,'Color',"#D95319",'LineWidth',2)
-    plot(norm_acc,hand_curve_a,'--y','LineWidth',2)
-    % plot(norm_acc(1:linear_index),hand_lin_curve,'-.c','LineWidth',1.5)
-    % plot(norm_acc_nonlin,hand_nonlin_curve,'-.b','LineWidth',1.5)
+    plot(norm_acc(1:linear_index),hand_lin_curve,'-.c','LineWidth',1.5)
+    plot(norm_acc_nonlin,hand_nonlin_curve,'-.b','LineWidth',1.5)
     plot(norm_acc,zeros(size(norm_acc)),'LineWidth',1,'Color',"#77AC30")
     text(norm_acc(end) + 0.03, 0, "NS", 'Color',"#77AC30",'FontSize', 15)
-    % quiver(x(1),y(1),x(2)-x(1),y(2)-y(1),0,'MaxHeadSize',15,'LineWidth',1.5,'Color','#A2142F');
-    % text(r_k*cos(theta_k)+0.02,r_k*sin(theta_k)/2,'$K_{US}$','Color',"#A2142F",'FontSize',20)
+    quiver(x(1),y(1),x(2)-x(1),y(2)-y(1),0,'MaxHeadSize',15,'LineWidth',1.5,'Color','#A2142F');
+    text(r_k*cos(theta_k)+0.02,r_k*sin(theta_k)/2,'$K_{US}$','Color',"#A2142F",'FontSize',20)
     xlim([0 1.7])
     legend('Handling curve','Linear Fitting', 'Polynomial Fitting','Location','east')
     hold off
