@@ -1,0 +1,29 @@
+Index of FY0          --> R-squared =  0.998
+Index for FY0         --> RMSE      = 68.066
+
+Index of FY0 varFz    --> R-squared =  0.830
+Index for FY0 varFz   --> RMSE      = 95.105
+
+Index of FY0 varGamma --> R-squared =  0.994
+Index of FY0 varGamma --> RMSE      = 71.151
+
+Index of MZ0          --> R-squared =  0.967
+Index for Mz0         --> RMSE      =  5.852
+
+Index of MZ0 varFz    --> R-squared =  0.543
+Index for Mz0 varFz   --> RMSE      =  4.479
+
+Index of Fx0          --> R-squared =  0.999
+Index for FX0         --> RMSE      = 59.721
+
+Index of FX0 varFz    --> R-squared =  0.726
+Index for FX0 varFz   --> RMSE      = 85.079
+
+Index of FX0 varGamma --> R-squared =  0.998
+Index of FX0 varGamma --> RMSE      = 93.164
+
+Index of Fx combined  --> R-squared =  0.961
+Index for Fx combined --> RMSE      = 88.687
+
+Index of Fy combined  --> R-squared =  0.514
+Index for Fy combined --> RMSE      = 53.908
