@@ -50,8 +50,8 @@ Tf = simulationPars.times.tf;         % stop time of the simulation
 % ----------------------------
 %% Start Simulation
 % % ----------------------------
-vehicle_data.rear_suspension.Ks_r = 10000;
-vehicle_data.front_suspension.Ks_f = 25000;
+% vehicle_data.rear_suspension.Ks_r = 10000;
+% vehicle_data.front_suspension.Ks_f = 25000;
 % % 
 % vehicle_data.vehicle.L_f = 1.2;
 % vehicle_data.vehicle.L_r = 0.5;

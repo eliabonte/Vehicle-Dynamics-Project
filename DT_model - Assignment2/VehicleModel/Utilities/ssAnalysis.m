@@ -30,12 +30,18 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     % ---------------------------------
     time_sim = model_sim.states.u.time;
     dt = time_sim(2)-time_sim(1);
-
     t_steer = model_sim.inputs.t_steer.data;
-    
-    time_sim_transient = time_sim(time_sim < t_steer);
-    index_ss = length(time_sim_transient);
-    time_sim_ss        = time_sim(index_ss:end);
+
+    % STEADY-STATE time changes with the two different tests
+    if t_steer > 1
+        time_sim_transient = time_sim(time_sim < t_steer);
+        index_ss = length(time_sim_transient);
+        time_sim_ss        = time_sim(index_ss:end);
+    else
+        time_sim_transient = time_sim(time_sim < 8);
+        index_ss = length(time_sim_transient);
+        time_sim_ss        = time_sim(index_ss:end);
+    end
 
     % -----------------
     % Inputs
