@@ -71,24 +71,24 @@ dataAnalysis(model_sim,vehicle_data,Ts);
 ssAnalysis(model_sim,vehicle_data,Ts);
 
 %% Further analysis on the behaviour of the vehicle - Different suspension stiffness
-Ks_r0 = vehicle_data.rear_suspension.Ks_r;
-Ks_f0 = vehicle_data.front_suspension.Ks_f;
-%Ks_r_vec = [Ks_r0-(20*Ks_r0/100), Ks_r0, Ks_r0+(20*Ks_r0/100)];
-Ks_f_vec = [Ks_f0-(20*Ks_f0/100), Ks_f0, Ks_f0+(20*Ks_f0/100)];
-
-for i=1:3
-    fprintf('Starting Simulation %d\n',i)
-    tic;
-    %vehicle_data.rear_suspension.Ks_f = Ks_r_vec(i);
-    vehicle_data.front_suspension.Ks_f = Ks_f_vec(i);
-    model_sim = sim('Vehicle_Model_2Track');
-    sim_vec(i) = model_sim;
-    elapsed_time_simulation = toc;
-    fprintf('Simulation %d completed\n', i)
-    fprintf('The total simulation time was %.2f seconds\n',elapsed_time_simulation)
-end
-%%
-suspAnalysis(sim_vec,vehicle_data,Ts,Ks_r0,Ks_f0);
+% Ks_r0 = vehicle_data.rear_suspension.Ks_r;
+% Ks_f0 = vehicle_data.front_suspension.Ks_f;
+% %Ks_r_vec = [Ks_r0-(20*Ks_r0/100), Ks_r0, Ks_r0+(20*Ks_r0/100)];
+% Ks_f_vec = [Ks_f0-(20*Ks_f0/100), Ks_f0, Ks_f0+(20*Ks_f0/100)];
+% 
+% for i=1:3
+%     fprintf('Starting Simulation %d\n',i)
+%     tic;
+%     %vehicle_data.rear_suspension.Ks_f = Ks_r_vec(i);
+%     vehicle_data.front_suspension.Ks_f = Ks_f_vec(i);
+%     model_sim = sim('Vehicle_Model_2Track');
+%     sim_vec(i) = model_sim;
+%     elapsed_time_simulation = toc;
+%     fprintf('Simulation %d completed\n', i)
+%     fprintf('The total simulation time was %.2f seconds\n',elapsed_time_simulation)
+% end
+% %%
+% suspAnalysis(sim_vec,vehicle_data,Ts,Ks_r0,Ks_f0);
 
 
 %% Further analysis on the behaviour of the vehicle - Different camber 

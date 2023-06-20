@@ -34,17 +34,15 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     t_steer = model_sim.inputs.t_steer.data;
 
     % type_test = 1 -> If I'm performing test with constant velocity and steer ramp
-    % type_test = 2 -> If I'm performing test with constant steering and speed ramp
+    type_test = 2; % -> If I'm performing test with constant steering and speed ramp
 
     % STEADY-STATE time changes with the two different tests
-    if t_steer > 10
-        type_test = 1;
+    if type_test == 1
         time_sim_transient = time_sim(time_sim < t_steer);
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     else
-        type_test = 2;
-        time_sim_transient = time_sim(time_sim < t_steer+5);
+        time_sim_transient = time_sim(time_sim < (20+Ts));
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     end
@@ -277,8 +275,8 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     
     % -- COMPUTE HANDLING CURVE and fitting with KUS--
     Delta_alpha = (alpha_r - alpha_f);
-    hand_curve_a = - Delta_alpha; 
-    hand_curve =  delta_ss - rho_ss.*L;
+    hand_curve = - Delta_alpha; 
+    %hand_curve =  delta_ss - rho_ss.*L;
 
     hand_curve(1) = 0;
 
@@ -362,6 +360,7 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     quiver(x(1),y(1),x(2)-x(1),y(2)-y(1),0,'MaxHeadSize',15,'LineWidth',1.5,'Color','#A2142F');
     text(r_k*cos(theta_k)+0.02,r_k*sin(theta_k)/2,'$K_{US}$','Color',"#A2142F",'FontSize',20)
     xlim([0 1.7])
+    ylim([-11*10^(-3) 10^(-3)])
     legend('Handling curve','Linear Fitting', 'Polynomial Fitting','Location','east')
     hold off
 
