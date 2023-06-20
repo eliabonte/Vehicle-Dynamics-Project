@@ -50,12 +50,10 @@ Tf = simulationPars.times.tf;         % stop time of the simulation
 % ----------------------------
 %% Start Simulation
 % % ----------------------------
-% vehicle_data.rear_suspension.Ks_r = 10000;
-% vehicle_data.front_suspension.Ks_f = 25000;
-% % 
-% vehicle_data.vehicle.L_f = 1.2;
-% vehicle_data.vehicle.L_r = 0.5;
- 
+
+%gamma_f0 = vehicle_data.front_wheel.static_camber;
+% vehicle_data.front_wheel.static_camber = -2;
+% 
 fprintf('Starting Simulation\n')
 tic;
 model_sim = sim('Vehicle_Model_2Track');
@@ -72,16 +70,36 @@ dataAnalysis(model_sim,vehicle_data,Ts);
 
 ssAnalysis(model_sim,vehicle_data,Ts);
 
-%% Further analysis on the behaviour of the vehicle - Different simulations with different values of some parameters 
-% Ks_r_vec = [10000 15000 vehicle_data.rear_suspension.Ks_r];
-% Ks_f_vec = [25000 20000 vehicle_data.front_suspension.Ks_f];
-% %gamma_vec = [-2 2];
+%% Further analysis on the behaviour of the vehicle - Different suspension stiffness
+Ks_r0 = vehicle_data.rear_suspension.Ks_r;
+Ks_f0 = vehicle_data.front_suspension.Ks_f;
+%Ks_r_vec = [Ks_r0-(20*Ks_r0/100), Ks_r0, Ks_r0+(20*Ks_r0/100)];
+Ks_f_vec = [Ks_f0-(20*Ks_f0/100), Ks_f0, Ks_f0+(20*Ks_f0/100)];
+
+for i=1:3
+    fprintf('Starting Simulation %d\n',i)
+    tic;
+    %vehicle_data.rear_suspension.Ks_f = Ks_r_vec(i);
+    vehicle_data.front_suspension.Ks_f = Ks_f_vec(i);
+    model_sim = sim('Vehicle_Model_2Track');
+    sim_vec(i) = model_sim;
+    elapsed_time_simulation = toc;
+    fprintf('Simulation %d completed\n', i)
+    fprintf('The total simulation time was %.2f seconds\n',elapsed_time_simulation)
+end
+%%
+suspAnalysis(sim_vec,vehicle_data,Ts,Ks_r0,Ks_f0);
+
+
+%% Further analysis on the behaviour of the vehicle - Different camber 
+
+% gamma_f0 = vehicle_data.front_wheel.static_camber;
+% gamma_vec = [-2 0 2];
 % 
 % for i=1:3
 %     fprintf('Starting Simulation %d\n',i)
 %     tic;
-%     vehicle_data.rear_suspension.Ks_r = Ks_r_vec(i);
-%     vehicle_data.front_suspension.Ks_f = Ks_f_vec(i);
+%     vehicle_data.front_wheel.static_camber = gamma_vec(i);
 %     model_sim = sim('Vehicle_Model_2Track');
 %     sim_vec(i) = model_sim;
 %     elapsed_time_simulation = toc;
@@ -89,6 +107,26 @@ ssAnalysis(model_sim,vehicle_data,Ts);
 %     fprintf('The total simulation time was %.2f seconds\n',elapsed_time_simulation)
 % end
 %%
-% suspAnalysis(sim_vec,vehicle_data,Ts);
+% camberAnalysis(sim_vec,vehicle_data,Ts);  
+
+%% Further analysis on the behaviour of the vehicle - Different toe angles 
+
+% vehicle_data.steering_system.toe = 0;
+% toe_vec = [-2 0 2];
+% 
+% for i=1:3
+%     fprintf('Starting Simulation %d\n',i)
+%     tic;
+%     vehicle_data.steering_system.toe = toe_vec(i);
+%     model_sim = sim('Vehicle_Model_2Track');
+%     sim_vec(i) = model_sim;
+%     elapsed_time_simulation = toc;
+%     fprintf('Simulation %d completed\n', i)
+%     fprintf('The total simulation time was %.2f seconds\n',elapsed_time_simulation)
+% end
+% 
+% %%
+% toeAnalysis(sim_vec,vehicle_data,Ts);
+
 
 % %vehicleAnimation(model_sim,vehicle_data,Ts);

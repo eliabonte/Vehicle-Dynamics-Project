@@ -198,6 +198,7 @@ transmission.eff_red = 0.93;   % [-] Efficiency of the gearbox
 
 steering_system.tau_D = 12; %3.67;  % [-] Steering transmission ratio (pinion-rack)
 steering_system.tau_H = new_vehicle.tau_H;       % [s] Time constant for steering wheel dynamics
+steering_system.toe = 0;
 
 
 % Braking system                        

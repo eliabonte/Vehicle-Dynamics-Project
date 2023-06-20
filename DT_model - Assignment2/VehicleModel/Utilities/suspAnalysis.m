@@ -1,4 +1,4 @@
-function suspAnalysis(sim_vec,vehicle_data,Ts)
+function suspAnalysis(sim_vec,vehicle_data,Ts,Ks_r0,Ks_f0)
 
     % ----------------------------------------------------------------
     %% Post-Processing and Data Analysis
@@ -20,24 +20,30 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
 
     tau_D = vehicle_data.steering_system.tau_D;  % [-] steering system ratio (pinion-rack)
 
-    Ks_r_vec = [10000 15000 vehicle_data.rear_suspension.Ks_r];
-    Ks_f_vec = [25000 20000 vehicle_data.front_suspension.Ks_f];
+    Ks_r_vec = [Ks_r0-(20*Ks_r0/100), Ks_r0, Ks_r0+(20*Ks_r0/100)];
 
     for i = 1:length(sim_vec)
         Ks_r(i) = Ks_r_vec(i);
-        Ks_f(i) = Ks_f_vec(i);
-        eps_s(i) = Ks_f(i)/(Ks_f(i) + Ks_r(i));
+        eps_s(i) = Ks_f0/(Ks_f0 + Ks_r(i));
     end
     % ---------------------------------
     %% Extract data from simulink model
     % ---------------------------------
     time_sim = sim_vec(1).states.u.time;
-
     t_steer = sim_vec(1).inputs.t_steer.data;
 
-    time_sim_transient = time_sim(time_sim < t_steer);
-    index_ss = length(time_sim_transient);
-    time_sim_ss        = time_sim(index_ss:end);
+    % STEADY-STATE time changes with the two different tests
+    if t_steer > 10
+        type_test = 1;
+        time_sim_transient = time_sim(time_sim < t_steer);
+        index_ss = length(time_sim_transient);
+        time_sim_ss        = time_sim(index_ss:end);
+    else
+        type_test = 2;
+        time_sim_transient = time_sim(time_sim < t_steer+5);
+        index_ss = length(time_sim_transient);
+        time_sim_ss        = time_sim(index_ss:end);
+    end
 
 
     for i = 1:length(sim_vec)    
@@ -80,6 +86,9 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
         Fy_fl_ss{i}       = Fy_fl{i}(index_ss:end);
         delta_fr_ss{i}    = delta_fr{i}(index_ss:end);
         delta_fl_ss{i}    = delta_fl{i}(index_ss:end);
+
+        delta_fr_ss{i}   = deg2rad(delta_fr_ss{i});
+        delta_fl_ss{i}   = deg2rad(delta_fl_ss{i});
     
         % Chassis side slip angle beta [rad]
         beta_ss{i} = atan(v_ss{i}./u_ss{i});
@@ -138,7 +147,7 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     %% Vertical loads
     
     figure('Name','Lateral Load Transfer','NumberTitle','off'), clf   
-    
+
     % --- REAR --- %
     ax(1) = subplot(211);
     hold on
@@ -150,8 +159,9 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     xlabel('$a_y$')
     grid on
     ylim([0 1000])
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('Rear LLT ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
+    legend('$Ks_{r0} - 20\%$','$Ks_{r0}$','$Ks_{r0} + 20\%$')
+    % title('Rear LLT with variable Rear Stiffness','FontSize',18)
+    title('Rear LLT with variable Front Stiffness','FontSize',18)
 
     % --- FRONT --- %
     ax(2) = subplot(212);
@@ -164,48 +174,49 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     xlabel('$a_y$')
     grid on
     ylim([0 1000])
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('Front LLT ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
+    legend('$Ks_{r0} - 20\%$','$Ks_{r0}$','$Ks_{r0} + 20\%$')
+    % title('Front LLT with variable Rear Stiffness','FontSize',18)
+    title('Front LLT with variable Front Stiffness','FontSize',18)
 
 
     %% Plot Axle characteristics
 
     % -- Plot axle characteristics ---
 
-    figure('Name','Fy_R normalized','NumberTitle','off'), clf
-    hold on
-    for i = 1:length(sim_vec)
-        plot(alpha_r_ss{i}, Fy_r_ss{i},'LineWidth',2)
-        hold on
-    end
-    grid on
-    xlabel('$\alpha_R [rad]$')
-    ylabel('$\mu_R$')
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('$\mu_R$ with ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
-    xlim([0 0.15]);
-    ylim([0 1.7]);
-
-    figure('Name','Fy_F normalized','NumberTitle','off'), clf
-    hold on
-    for i = 1:length(sim_vec)
-        plot(alpha_f_ss{i}, Fy_f_ss{i},'LineWidth',2)
-        hold on
-    end
-    grid on
-    xlabel('$\alpha_F [rad]$')
-    ylabel('$\mu_F$')
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
-    title('$\mu_F$ with ($\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)')
-    xlim([0 0.15]);
-    ylim([0 1.7]);
+    % figure('Name','Fy_R normalized','NumberTitle','off'), clf
+    % hold on
+    % for i = 1:length(sim_vec)
+    %     plot(alpha_r_ss{i}, Fy_r_ss{i},'LineWidth',2)
+    %     hold on
+    % end
+    % grid on
+    % xlabel('$\alpha_R [rad]$')
+    % ylabel('$\mu_R$')
+    % legend('$Ks_{r0} - 20\%$','$Ks_{r0}$','$Ks_{r0} + 20\%$')
+    % title('$\mu_R$ with variable Rear Stiffness','FontSize',18)
+    % xlim([0 0.15]);
+    % ylim([0 1.7]);
+    % 
+    % figure('Name','Fy_F normalized','NumberTitle','off'), clf
+    % hold on
+    % for i = 1:length(sim_vec)
+    %     plot(alpha_f_ss{i}, Fy_f_ss{i},'LineWidth',2)
+    %     hold on
+    % end
+    % grid on
+    % xlabel('$\alpha_F [rad]$')
+    % ylabel('$\mu_F$')
+    % legend('$Ks_{r0} - 20\%$','$Ks_{r0}$','$Ks_{r0} + 20\%$')
+    % title('$mu_F$ with variable Rear Stiffness','FontSize',18)
+    % xlim([0 0.15]);
+    % % ylim([0 1.7]);
 
 
     %% Plot behaviour of vehicle - Handling diagram for steer ramp test with constant velocity
    
     for i = 1:length(sim_vec)
         hand_curve_ss{i} =  delta_ss{i} - rho_ss{i}.*L;
-
+        %hand_curve_ss{i} =  - (alpha_r_ss{i} - alpha_f_ss{i});
     end
    
     figure('Name','Handling curve','NumberTitle','off'), clf
@@ -213,12 +224,14 @@ function suspAnalysis(sim_vec,vehicle_data,Ts)
     hold on
     xlabel('$ \frac{a_y}{g}$')
     ylabel('$\delta - \rho L$')
-    title('Handling Diagram (with $\epsilon_{s1} > \epsilon_{s2} > \epsilon_{s3}$)','FontSize',18)
+    %title('Handling Diagram with variable Rear Stiffness','FontSize',18)
+    title('Handling Diagram with variable Front Stiffness','FontSize',18)
     for i = 1:length(sim_vec)   
         plot(norm_acc{i},hand_curve_ss{i},'LineWidth',2)
     end
     xlim([0 1.7])
-    legend('$\epsilon_{s1}$','$\epsilon_{s2}$','$\epsilon_{s3}$')
+    %legend('$Ks_{r0} - 20\%$','$Ks_{r0}$','$Ks_{r0} + 20\%$')
+    legend('$Ks_{f0} - 20\%$','$Ks_{f0}$','$Ks_{f0} + 20\%$')
     hold off
     
 

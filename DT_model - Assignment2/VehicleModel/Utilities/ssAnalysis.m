@@ -17,6 +17,7 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     hs = vehicle_data.vehicle.hGs;
 
     tau_D = vehicle_data.steering_system.tau_D;  % [-] steering system ratio (pinion-rack)
+    tau_H = vehicle_data.steering_system.tau_H;
 
     Ks_r = vehicle_data.rear_suspension.Ks_r;
     Ks_f = vehicle_data.front_suspension.Ks_f;
@@ -32,13 +33,18 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     dt = time_sim(2)-time_sim(1);
     t_steer = model_sim.inputs.t_steer.data;
 
+    % type_test = 1 -> If I'm performing test with constant velocity and steer ramp
+    % type_test = 2 -> If I'm performing test with constant steering and speed ramp
+
     % STEADY-STATE time changes with the two different tests
-    if t_steer > 1
+    if t_steer > 10
+        type_test = 1;
         time_sim_transient = time_sim(time_sim < t_steer);
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     else
-        time_sim_transient = time_sim(time_sim < 8);
+        type_test = 2;
+        time_sim_transient = time_sim(time_sim < t_steer+5);
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     end
@@ -141,9 +147,12 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     % ---- axle side slips ----
     alpha_r = - (v_ss - Omega_ss*Lr)./u_ss;
     alpha_f =  delta_ss - (v_ss + Omega_ss*Lf)./u_ss;
-    alpha_r(1) = 0;
-    alpha_f(1) =  0;
+    alpha_r(1) = 0; alpha_r(2) = 0;
+    alpha_f(1) =  0; alpha_f(2) = 0;
 
+
+    
+    
 
     % ---- normalized axle lateral forces ----
     Fzr0 = m*9.81*Lf/L;
@@ -233,7 +242,7 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     plot(time_sim_ss, Fy_F, 'LineWidth',2,'Color',color_front)
     grid on
     title('Axle Lateral Forces')
-    legend('$\alpha_R$','$\alpha_F$')
+    legend('$\Fy_R$','$\Fy_F$')
     xlabel('t[s]')
     ylabel('Fy[N]')
     xlim([0 time_sim(end)])
@@ -243,33 +252,17 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     clear ax
 
 
-    % -- Plot normalized axle characteristics ---
+    % -- Plot normalized axle characteristics --    
     
-    mu_r_lin = mu_r(mu_r < 0.38001);
-    mu_f_lin = mu_f(mu_f < 0.35001);
-
-    i_r = length(mu_r_lin);
-    i_f = length(mu_f_lin);
-
-    Cyr = mu_r_lin(end)/alpha_r(i_r);
-    Cyf = mu_f_lin(end)/alpha_f(i_f);
-
-    lin_Fyr = alpha_r.*Cyr;
-    lin_Fyf = alpha_f.*Cyf;
-    lin_range = round(length(alpha_r)/2);
+    % --- Cornering Stiffness ---
 
     figure('Name','muR,muF vs alphaR,alphaF','NumberTitle','off'), clf
     hold on
     plot(alpha_r, mu_r,'LineWidth',2,'Color',"#EDB120")
     plot(alpha_f, mu_f,'LineWidth',2,'Color',"#0072BD")
-    % plot(alpha_r(1:lin_range), lin_Fyr(1:lin_range),'LineWidth',2,'Color',"#EDB120")
-    % plot(alpha_f(1:lin_range), lin_Fyf(1:lin_range),'LineWidth',2,'Color',"#0072BD")
     %plot(alpha_r, ones(size(alpha_r)),'LineWidth',1,'Color','red')
-    %hold on
     text(alpha_r(end)+0.003, mu_r(end)+0.003, 'R','Color',color_rear,'FontSize',15)  %letter R
     text(alpha_f(end)+0.003, mu_f(end)+0.003, 'F','Color',color_front,'FontSize',15)  %letter R
-    %text(alpha_r(end)+0.03, 1, '$\frac{a_y}{g}$','Color',"red")
-    %hold on
     grid on
     title('Normalized Lateral Forces vs Axle Side-Slip')
     xlabel('$\alpha_R$, $\alpha_F$ [rad]')
@@ -282,9 +275,9 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     %% Plot behaviour of vehicle - Handling diagram for steer ramp test with constant velocity
     % Kus e fit polynomial
     
-    
-    
-    hand_curve_a = - (alpha_r - alpha_f); 
+    % -- COMPUTE HANDLING CURVE and fitting with KUS--
+    Delta_alpha = (alpha_r - alpha_f);
+    hand_curve_a = - Delta_alpha; 
     hand_curve =  delta_ss - rho_ss.*L;
 
     hand_curve(1) = 0;
@@ -298,22 +291,57 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     coeffs_lin = polyfit(norm_acc_lin, hand_curve(1:linear_index),1);
     K_us = coeffs_lin(1);
     
-    fprintf('\n')
-    fprintf('Understeering Gradient K_us = %d',K_us);
-    fprintf('\n')
-    
     hand_lin_curve = K_us.*norm_acc(1:linear_index);
 
     % -- fit non-linear range
     c_nonlin = polyfit(norm_acc(linear_index:end), hand_curve(linear_index:end),3);
 
-
     norm_acc_nonlin = norm_acc(linear_index:end);
 
     hand_nonlin_curve = c_nonlin(1).*(norm_acc_nonlin.^3) + c_nonlin(2).*(norm_acc_nonlin.^2) + c_nonlin(3).*norm_acc_nonlin + c_nonlin(4);
     
-    %hand_fitted_curve = c_nonlin(1).*(norm_acc_nonlin.^3) + c_nonlin(2).*(norm_acc_nonlin.^2) + c_nonlin(3).*norm_acc_nonlin + c_nonlin(4);
+    
+    % -- UNDERSTEERING GRADIENT THEORETICAL --
+    K_us_th1 = -diff(Delta_alpha)./diff(Ay_ss);
 
+    Cy_r = diff(mu_r) ./ diff(alpha_r);
+    Cy_r = Cy_r(10:end);
+    Cy_f = diff(mu_f) ./ diff(alpha_f);
+    Cy_f = Cy_f(10:end);
+    K_us_th2 = (-1/(L*g*tau_H))*((1./Cy_r)-(1./Cy_f));
+    
+    index_linear = find(norm_acc<0.35);
+    index_linear = index_linear(end);
+
+    figure('Name','Kus VS A_y','NumberTitle','off'), clf
+    hold on
+    plot(norm_acc(20:end), K_us_th1(19:end),'LineWidth',2)
+    plot(norm_acc(20:end), K_us_th2(10:end),'LineWidth',2)
+    plot(norm_acc(20:end), K_us*ones(size(norm_acc(20:end))),'LineWidth',2)
+    xlabel('ay/g')
+    ylabel('$K_{us}$')
+    title('$K_{us}$ vs $a_y$')
+    legend('Kus $delta_{ay}$','Kus formula','Kus fitted')
+    ylim([-0.009 0])
+   
+    K_us_th1 = K_us_th1(index_linear);
+    K_us_th2 = K_us_th2(index_linear);
+
+    fprintf('\n')
+    fprintf('Understeering Gradient theoretically: K_us_th1 = %d',K_us_th1);
+    fprintf('\n')
+    fprintf('Understeering Gradient theoretically: K_us_th2 = %d',K_us_th2);
+    fprintf('\n')
+    fprintf('\n')
+    fprintf('Understeering Gradient with fitting: K_us = %d',K_us);
+    fprintf('\n')
+
+
+    % fprintf('\n')
+    % fprintf('Understeering Gradient theoretically: K_us_th2 = %d',K_us_th2);
+    % fprintf('\n')
+
+    
     theta_k = atan(K_us);
     r_k = 0.3;
     x = [r_k r_k*cos(theta_k)];
@@ -326,55 +354,63 @@ function ssAnalysis(model_sim,vehicle_data,Ts)
     ylabel('$\delta - \rho L$ [rad]')
     title('Handling Diagram','FontSize',18)
     plot(norm_acc,hand_curve,'Color',"#D95319",'LineWidth',2)
-    plot(norm_acc,hand_curve_a,'--y','LineWidth',2)
-    % plot(norm_acc(1:linear_index),hand_lin_curve,'-.c','LineWidth',1.5)
-    % plot(norm_acc_nonlin,hand_nonlin_curve,'-.b','LineWidth',1.5)
+    %plot(norm_acc,hand_curve_a,'--y','LineWidth',2)
+    plot(norm_acc(1:linear_index),hand_lin_curve,'-.c','LineWidth',1.5)
+    plot(norm_acc_nonlin,hand_nonlin_curve,'-.b','LineWidth',1.5)
     plot(norm_acc,zeros(size(norm_acc)),'LineWidth',1,'Color',"#77AC30")
     text(norm_acc(end) + 0.03, 0, "NS", 'Color',"#77AC30",'FontSize', 15)
-    % quiver(x(1),y(1),x(2)-x(1),y(2)-y(1),0,'MaxHeadSize',15,'LineWidth',1.5,'Color','#A2142F');
-    % text(r_k*cos(theta_k)+0.02,r_k*sin(theta_k)/2,'$K_{US}$','Color',"#A2142F",'FontSize',20)
+    quiver(x(1),y(1),x(2)-x(1),y(2)-y(1),0,'MaxHeadSize',15,'LineWidth',1.5,'Color','#A2142F');
+    text(r_k*cos(theta_k)+0.02,r_k*sin(theta_k)/2,'$K_{US}$','Color',"#A2142F",'FontSize',20)
     xlim([0 1.7])
     legend('Handling curve','Linear Fitting', 'Polynomial Fitting','Location','east')
     hold off
 
-    %% Yaw Rate Gain
+    %% Yaw Rate Gain - Beta Gain - Acceleration Gain
+    % Compute the gains only with the test with speed ramp and constant
+    % steering angle 
 
-    yr_gain = Omega_ss./delta_ss;
+    if type_test == 2
 
-    figure('Name','Yaw Rate Gain','NumberTitle','off'), clf
-    set(gca,'fontsize',16)
-    hold on
-    xlabel('$u$')
-    ylabel('$\frac{\Omega}{\delta}$','Interpreter','latex')
-    title('Yaw Rate Gain','FontSize',18)
-    plot(u_ss,  yr_gain,'LineWidth',2)
-
-    %% Beta Gain
-    % % 
-    % beta_gain_formula = Lr/L - (m/L^3)*((Lf/Cyr)+(Lr/Cyf))*((u_ss.^2)./(1 + K_us.*(u_ss.^2)));
+        %%Yaw Rate Gain
     
-    beta_gain = beta_ss./delta_ss;
-
-    figure('Name','Beta Gain','NumberTitle','off'), clf
-    set(gca,'fontsize',16)
-    hold on
-    xlabel('$u$')
-    ylabel('$\frac{\beta}{\delta}$','Interpreter','latex')
-    title('$\beta$ Gain','FontSize',18)
-    plot(u_ss,beta_gain,'LineWidth',2)
-    % plot(u_ss,beta_gain_formula,'LineWidth',2,'--y')
+        yr_gain = Omega_ss./delta_ss;
     
-    %% Acceleration Gain
+        figure('Name','Yaw Rate Gain','NumberTitle','off'), clf
+        set(gca,'fontsize',16)
+        hold on
+        xlabel('$u[\frac{m}/{s^2}]$')
+        ylabel('$\frac{\Omega}{\delta}$','Interpreter','latex')
+        title('Yaw Rate Gain','FontSize',18)
+        plot(u_ss,  yr_gain,'LineWidth',2)
+    
+        %%Beta Gain
+        % % 
+        % beta_gain_formula = Lr/L - (m/L^3)*((Lf/Cyr)+(Lr/Cyf))*((u_ss.^2)./(1 + K_us.*(u_ss.^2)));
+        
+        beta_gain = beta_ss./delta_ss;
+    
+        figure('Name','Beta Gain','NumberTitle','off'), clf
+        set(gca,'fontsize',16)
+        hold on
+        xlabel('$u [\frac{m}/{s^2}]$')
+        ylabel('$\frac{\beta}{\delta}$','Interpreter','latex')
+        title('$\beta$ Gain','FontSize',18)
+        plot(u_ss,beta_gain,'LineWidth',2)
+        % plot(u_ss,beta_gain_formula,'LineWidth',2,'--y')
+        
 
-    acc_gain = Ay_ss./delta_ss;
-
-    figure('Name','Acceleration Gain','NumberTitle','off'), clf
-    set(gca,'fontsize',16)
-    hold on
-    xlabel('$u$')
-    ylabel('$\frac{a_y}{\delta}$','Interpreter','latex')
-    title('Acceleration Gain','FontSize',18)
-    plot(u_ss,acc_gain,'LineWidth',2)
+        %%Acceleration Gain
+    
+        acc_gain = Ay_ss./delta_ss;
+    
+        figure('Name','Acceleration Gain','NumberTitle','off'), clf
+        set(gca,'fontsize',16)
+        hold on
+        xlabel('$u[\frac{m}/{s^2}]$')
+        ylabel('$\frac{a_y}{\delta}$','Interpreter','latex')
+        title('Acceleration Gain','FontSize',18)
+        plot(u_ss,acc_gain,'LineWidth',2)
+    end
 
 end
     
