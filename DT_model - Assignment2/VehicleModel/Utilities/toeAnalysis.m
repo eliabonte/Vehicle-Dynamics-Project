@@ -1,4 +1,4 @@
-function toeAnalysis(sim_vec,vehicle_data,Ts)
+function toeAnalysis(sim_vec,vehicle_data,type_test, t_steer, Ts)
 
     % ----------------------------------------------------------------
     %% Post-Processing and Data Analysis
@@ -25,23 +25,24 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     % ---------------------------------
     time_sim = sim_vec(1).states.u.time;
 
-    t_steer = sim_vec(1).inputs.t_steer.data;
+    %t_steer = sim_vec(1).inputs.t_steer.data;
 
     % STEADY-STATE time changes with the two different tests
-    if t_steer > 10
-        type_test = 1;
+    if type_test == 1
         time_sim_transient = time_sim(time_sim < t_steer);
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     else
-        type_test = 2;
-        time_sim_transient = time_sim(time_sim < t_steer+5);
+        time_sim_transient = time_sim(time_sim < (20+Ts));
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     end
 
 
     for i = 1:length(sim_vec)    
+
+        delta_D{i}       = sim_vec(i).inputs.delta_D.data;
+        delta_D_ss{i}    = delta_D{i}(index_ss:end);
 
         u{i}          = sim_vec(i).states.u.data;
         v{i}          = sim_vec(i).states.v.data;
@@ -59,7 +60,6 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
         Fz_rl_ss{i}      = Fz_rl{i}(index_ss:end);
         Fz_fr_ss{i}      = Fz_fr{i}(index_ss:end);
         Fz_fl_ss{i}      = Fz_fl{i}(index_ss:end);
-        delta_ss{i}      = delta{i}(index_ss:end);
 
         % -----------------
         % Extra Parameters
@@ -82,8 +82,9 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
         delta_fr_ss{i}    = delta_fr{i}(index_ss:end);
         delta_fl_ss{i}    = delta_fl{i}(index_ss:end);
 
-        % delta_fr_ss{i}   = deg2rad(delta_fr_ss{i});
-        % delta_fl_ss{i}   = deg2rad(delta_fl_ss{i});
+
+        delta_ss{i}   = deg2rad(delta_D_ss{i}./tau_D);
+
         % 
         % Chassis side slip angle beta [rad]
         beta_ss{i} = atan(v_ss{i}./u_ss{i});
@@ -124,8 +125,8 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
         Fzr0 = m*9.81*Lf/L;
         Fzf0 = m*9.81*Lr/L;
 
-        Fy_f_ss{i} = Fy_F_ss{i}./Fzf0;
-        Fy_r_ss{i} = Fy_R_ss{i}./Fzr0;
+        mu_f_ss{i} = Fy_F_ss{i}./Fzf0;
+        mu_r_ss{i} = Fy_R_ss{i}./Fzr0;
     
         % --- LATERAL LOAD TRANSFER ---
         dFz_r_ss{i} = m*Ay_ss{i}*(((Lf/L)*(hrr/Wr)) + (hs/Wr)*(1 - eps));
@@ -154,7 +155,7 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     xlabel('$a_y$')
     grid on
     ylim([0 1000])
-    legend('$toe = -2 \deg$','$toe = 0$','$toe = 2\deg$')
+    legend('$toe = -1\deg$','$toe = 0$','$toe = 1\deg$')
     title('Rear LLT with variable front toe angle','FontSize',18)
 
     % --- FRONT --- %
@@ -168,7 +169,7 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     xlabel('$a_y$')
     grid on
     ylim([0 1000])
-    legend('$toe = -2 \deg$','$toe = 0$','$toe = 2\deg$')
+    legend('$toe = -1\deg$','$toe = 0$','$toe = 1\deg$')
     title('Front LLT with variable front toe angle','FontSize',18)
 
 
@@ -182,7 +183,7 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     grid on
     ylabel('$\alpha_F [rad]$')
     xlabel('t[s]')
-    legend('$toe = -2 \deg$','$toe = 0$','$toe = 2\deg$')
+    legend('$toe = -1\deg$','$toe = 0$','$toe = 1\deg$')
     title('$\alpha_F$ with variable front toe angle','FontSize',18)
     xlim([0 time_sim(end)])
     ylim([0 0.12])
@@ -192,7 +193,7 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     plot(time_sim_ss, alpha_r_ss{1}, 'LineWidth',2,'Color',color_rear)
     plot(time_sim_ss, alpha_f_ss{1}, 'LineWidth',2,'Color',color_front)
     grid on
-    title('Axle Side-Slip with $toe = -2 \deg$')
+    title('Axle Side-Slip with $toe = -1\deg$')
     legend('$\alpha_R$','$\alpha_F$')
     xlabel('t[s]')
     ylabel('$\alpha$[rad]')
@@ -204,13 +205,13 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     figure('Name','Fy_R normalized','NumberTitle','off'), clf
     hold on
     for i = 1:length(sim_vec)
-        plot(alpha_r_ss{i}, Fy_r_ss{i},'LineWidth',2)
+        plot(alpha_r_ss{i}, mu_r_ss{i},'LineWidth',2)
         hold on
     end
     grid on
     xlabel('$\alpha_R [rad]$')
     ylabel('$\mu_R$')
-    legend('$toe = -2 \deg$','$toe = 0$','$toe = 2\deg$')
+    legend('$toe = -1\deg$','$toe = 0$','$toe = 1\deg$')
     title('$\mu_R$ with variable front toe angle','FontSize',18)
     xlim([0 0.15]);
     ylim([0 1.7]);
@@ -218,13 +219,13 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     figure('Name','Fy_F normalized','NumberTitle','off'), clf
     hold on
     for i = 1:length(sim_vec)
-        plot(alpha_f_ss{i}, Fy_f_ss{i},'LineWidth',2)
+        plot(alpha_f_ss{i}, mu_f_ss{i},'LineWidth',2)
         hold on
     end
     grid on
     xlabel('$\alpha_F [rad]$')
     ylabel('$\mu_F$')
-    legend('$toe = -2 \deg$','$toe = 0$','$toe = 2\deg$')
+    legend('$toe = -1\deg$','$toe = 0$','$toe = 1\deg$')
     title('$\mu_F$ with variable front toe angle','FontSize',18)
     xlim([0 0.15]);
     ylim([0 1.7]);
@@ -233,8 +234,8 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
     %% Plot behaviour of vehicle - Handling diagram for steer ramp test with constant velocity
    
     for i = 1:length(sim_vec)
-        hand_curve_ss{i} =  delta_ss{i} - rho_ss{i}.*L;
-        %hand_curve_ss{i} =  - (alpha_r_ss{i} - alpha_f_ss{i});
+        %hand_curve_ss{i} =  delta_ss{i} - rho_ss{i}.*L;
+        hand_curve_ss{i} =  - (alpha_r_ss{i} - alpha_f_ss{i});
     end
    
     figure('Name','Handling curve','NumberTitle','off'), clf
@@ -246,7 +247,7 @@ function toeAnalysis(sim_vec,vehicle_data,Ts)
         plot(norm_acc{i},hand_curve_ss{i},'LineWidth',2)
     end
     xlim([0 1.7])
-    legend('$toe = -2 \deg$','$toe = 0$','$toe = 2\deg$')
+    legend('$toe = -1\deg$','$toe = 0$','$toe = 1\deg$')
     title('Handling Diagram with variable front toe angle','FontSize',18)
     hold off
     

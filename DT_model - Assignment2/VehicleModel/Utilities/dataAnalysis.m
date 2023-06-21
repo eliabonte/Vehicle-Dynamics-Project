@@ -172,14 +172,14 @@ function dataAnalysis(model_sim,vehicle_data,Ts)
     xlim([0 time_sim(end)])
     % --- delta_fr --- %
     ax(2) = subplot(222);
-    plot(time_sim,delta_fr,'LineWidth',2)
+    plot(time_sim,rad2deg(delta_fr),'LineWidth',2)
     grid on
     title('$\delta_{fr}$ [deg]')
     xlim([0 time_sim(end)])
     % --- delta_fl --- %
     ax(3) = subplot(223);
     hold on
-    plot(time_sim,delta_fl,'LineWidth',2)
+    plot(time_sim,rad2deg(delta_fl),'LineWidth',2)
     grid on
     title('$\delta_{fl}$ [deg]')
     xlim([0 time_sim(end)])

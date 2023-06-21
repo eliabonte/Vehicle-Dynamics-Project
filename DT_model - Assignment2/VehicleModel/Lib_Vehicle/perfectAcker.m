@@ -12,7 +12,7 @@ function [delta__fr, delta__fl] = perfectAcker(delta,vehicle_data)
     toe = vehicle_data.steering_system.toe;
     
     % Perfect Ackermann steering law
-    delta__fr =  deg2rad(toe) + atan((2*Lr+2*Lf)*tan(delta)/(Wf*tan(delta)+2*Lr+2*Lf));
+    delta__fr = deg2rad(toe) + atan((2*Lr+2*Lf)*tan(delta)/(Wf*tan(delta)+2*Lr+2*Lf));
     delta__fl = -deg2rad(toe) - atan((2*Lr+2*Lf)*tan(delta)/(Wf*tan(delta)-2*Lr-2*Lf));
 
 end

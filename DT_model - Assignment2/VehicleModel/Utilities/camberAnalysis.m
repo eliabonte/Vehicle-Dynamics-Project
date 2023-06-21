@@ -1,4 +1,4 @@
-function camberAnalysis(sim_vec,vehicle_data,Ts)
+function camberAnalysis(sim_vec,vehicle_data,type_test, t_steer, Ts)
 
     % ----------------------------------------------------------------
     %% Post-Processing and Data Analysis
@@ -26,23 +26,23 @@ function camberAnalysis(sim_vec,vehicle_data,Ts)
     % ---------------------------------
     time_sim = sim_vec(1).states.u.time;
 
-    t_steer = sim_vec(1).inputs.t_steer.data;
 
     % STEADY-STATE time changes with the two different tests
-    if t_steer > 10
-        type_test = 1;
+    if type_test == 1
         time_sim_transient = time_sim(time_sim < t_steer);
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     else
-        type_test = 2;
-        time_sim_transient = time_sim(time_sim < t_steer+5);
+        time_sim_transient = time_sim(time_sim < (20+Ts));
         index_ss = length(time_sim_transient);
         time_sim_ss        = time_sim(index_ss:end);
     end
 
 
     for i = 1:length(sim_vec)    
+
+        delta_D{i}       = sim_vec(i).inputs.delta_D.data;
+        delta_D_ss{i}    = delta_D{i}(index_ss:end);
 
         u{i}          = sim_vec(i).states.u.data;
         v{i}          = sim_vec(i).states.v.data;
@@ -83,9 +83,11 @@ function camberAnalysis(sim_vec,vehicle_data,Ts)
         delta_fr_ss{i}    = delta_fr{i}(index_ss:end);
         delta_fl_ss{i}    = delta_fl{i}(index_ss:end);
 
-        delta_fr_ss{i}   = deg2rad(delta_fr_ss{i});
-        delta_fl_ss{i}   = deg2rad(delta_fl_ss{i});
-    
+
+        delta_ss{i}   = deg2rad(delta_D_ss{i}./tau_D);
+
+
+
         % Chassis side slip angle beta [rad]
         beta_ss{i} = atan(v_ss{i}./u_ss{i});
     
@@ -122,11 +124,12 @@ function camberAnalysis(sim_vec,vehicle_data,Ts)
         alpha_f_ss{i}(1,1) = 0;
     
         % ---- normalized axle lateral forces ----
+    
         Fzr0 = m*9.81*Lf/L;
         Fzf0 = m*9.81*Lr/L;
 
-        Fy_f_ss{i} = Fy_F_ss{i}./Fzf0;
-        Fy_r_ss{i} = Fy_R_ss{i}./Fzr0;
+        mu_f_ss{i} = Fy_F_ss{i}./Fzf0;
+        mu_r_ss{i} = Fy_R_ss{i}./Fzr0;
     
         % --- LATERAL LOAD TRANSFER ---
         dFz_r_ss{i} = m*Ay_ss{i}*(((Lf/L)*(hrr/Wr)) + (hs/Wr)*(1 - eps));
@@ -205,13 +208,14 @@ function camberAnalysis(sim_vec,vehicle_data,Ts)
     figure('Name','Fy_R normalized','NumberTitle','off'), clf
     hold on
     for i = 1:length(sim_vec)
-        plot(alpha_r_ss{i}, Fy_r_ss{i},'LineWidth',2)
+        plot(alpha_r_ss{i}, mu_r_ss{i},'LineWidth',2,'Color',color_rear)
+        plot(alpha_f_ss{i}, mu_f_ss{i},'LineWidth',2,'Color',color_front)
         hold on
     end
     grid on
     xlabel('$\alpha_R [rad]$')
     ylabel('$\mu_R$')
-    legend('$\gamma = -2 \deg$','$\gamma = 0$','$\gamma = 2\deg$')
+    legend('$\mu_R,\gamma = -2\deg$','$\mu_F,\gamma = -2\deg$','$\mu_R,\gamma = 0\deg$','$\mu_F,\gamma = 0\deg$','$\mu_R,\gamma = 2\deg$','$\mu_F,\gamma = 2\deg$')
     title('$\mu_R$ with variable front camber','FontSize',18)
     xlim([0 0.15]);
     ylim([0 1.7]);
@@ -219,7 +223,7 @@ function camberAnalysis(sim_vec,vehicle_data,Ts)
     figure('Name','Fy_F normalized','NumberTitle','off'), clf
     hold on
     for i = 1:length(sim_vec)
-        plot(alpha_f_ss{i}, Fy_f_ss{i},'LineWidth',2)
+        plot(alpha_f_ss{i}, mu_f_ss{i},'LineWidth',2)
         hold on
     end
     grid on
@@ -234,8 +238,8 @@ function camberAnalysis(sim_vec,vehicle_data,Ts)
     %% Plot behaviour of vehicle - Handling diagram for steer ramp test with constant velocity
    
     for i = 1:length(sim_vec)
-        hand_curve_ss{i} =  delta_ss{i} - rho_ss{i}.*L;
-        %hand_curve_ss{i} =  - (alpha_r_ss{i} - alpha_f_ss{i});
+        %hand_curve_ss{i} =  delta_ss{i} - rho_ss{i}.*L;
+        hand_curve_ss{i} =  - (alpha_r_ss{i} - alpha_f_ss{i});
     end
    
     figure('Name','Handling curve','NumberTitle','off'), clf
