@@ -1,8 +1,0 @@
-Understeering Gradient theoretically: K_us_th2 = -5.726690e-03   <-- with formula:
-									Cy_r = diff(mu_r) ./ diff(alpha_r);
-   									Cy_f = diff(mu_f) ./ diff(alpha_f);
-   									
-								     K_us_th2 = (-1/(L*g*tau_H))*((1./Cy_r)-(1./Cy_f));				
-				
-
-Understeering Gradient with fitting: K_us = -5.994600e-03   <-- polyfit function in matlab (n=1)

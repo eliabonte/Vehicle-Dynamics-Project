@@ -58,10 +58,10 @@ type_test = 2; t_steer = 20; % RAMP STEER TEST
 % % ----------------------------
 
 %vehicle_data.front_wheel.static_camber = -2;
+% % 
+% vehicle_data.rear_suspension.Ks_f = 25000;
+% vehicle_data.rear_suspension.Ks_r = 10000;
 % 
-vehicle_data.rear_suspension.Ks_f = 25000;
-vehicle_data.rear_suspension.Ks_r = 10000;
-
 fprintf('Starting Simulation\n')
 tic;
 model_sim = sim('Vehicle_Model_2Track');
@@ -81,16 +81,14 @@ ssAnalysis(model_sim,vehicle_data,type_test, t_steer,Ts);
 %% Further analysis on the behaviour of the vehicle - Different suspension stiffness
 % Ks_r0 = vehicle_data.rear_suspension.Ks_r;
 % Ks_f0 = vehicle_data.front_suspension.Ks_f;
-% %Ks_r_vec = [Ks_r0-(20*Ks_r0/100), Ks_r0, Ks_r0+(20*Ks_r0/100)];
-% % Ks_f_vec = [Ks_f0-(20*Ks_f0/100), Ks_f0, Ks_f0+(20*Ks_f0/100)];
+% % %Ks_r_vec = [Ks_r0-(20*Ks_r0/100), Ks_r0, Ks_r0+(20*Ks_r0/100)];
+% Ks_f_vec = [Ks_f0-(20*Ks_f0/100), Ks_f0, Ks_f0+(20*Ks_f0/100)];
 % 
-% Ks_f_vec = [Ks_f0, 23000];
-% Ks_r_vec = [Ks_r0, 12000];
-% 
-% for i=1:length(Ks_r_vec)
+% % 
+% for i=1:length(Ks_f_vec)
 %     fprintf('Starting Simulation %d\n',i)
 %     tic;
-%     vehicle_data.rear_suspension.Ks_r = Ks_r_vec(i);
+%     % vehicle_data.rear_suspension.Ks_r = Ks_r_vec(i);
 %     vehicle_data.front_suspension.Ks_f = Ks_f_vec(i);
 %     model_sim = sim('Vehicle_Model_2Track');
 %     sim_vec(i) = model_sim;
